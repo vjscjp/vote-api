@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -27,6 +28,14 @@ func main() {
 	log.Printf("API server listening at %s", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
+
+var (
+	db_name      = os.Getenv("POSTGRES_DB")
+	db_user = os.Getenv("POSTGRES_USER")
+	db_pwd  = os.Getenv("POSTGRES_PASSWORD")
+	db_host = os.Getenv("SEED_HOST")
+	db_port = os.Getenv("SEED_PORT")
+)
 
 type Likes struct {
 	Count int
@@ -122,7 +131,11 @@ func dbConnection() (db *sql.DB, err error) {
 		if i > 0 {
 			log.Printf("DB connection attempt %d of 10 failed; retrying (%s)", i, err.Error())
 		}
-		db, err = sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/postgresDB?sslmode=disable")
+
+		//ex: "postgres://postgres:postgres@test--pgtest--pgsingle--1164ae-0.service.consul:4000/postgresDB?sslmode=disable"
+		connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", db_user, db_pwd, db_host, db_port, db_name)
+		 log.Println(connStr)
+		db, err = sql.Open("postgres", connStr)
 		if err = db.Ping(); err == nil {
 			if i > 0 {
 				log.Printf("Connected to database after %d attempts", i+1)
